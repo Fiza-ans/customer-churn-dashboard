@@ -27,24 +27,31 @@ col4.metric("Recall", "0.521")
 # ---------------- FEATURE IMPORTANCE ----------------
 st.header("⭐ Feature Importance")
 
-try:
-    # If model is pipeline
-    if hasattr(model, "named_steps"):
-        importances = model.named_steps['model'].feature_importances_
-    else:
-        importances = model.feature_importances_
+# Get trained XGBoost model
+xgb_model = model.named_steps['model']
 
-    fig, ax = plt.subplots()
-    ax.barh(range(len(importances[:10])), importances[:10])
-    ax.set_title("Top Features Influencing Churn")
+# Get feature importances
+importances = xgb_model.feature_importances_
 
-    st.pyplot(fig)
+# Get feature names after preprocessing
+feature_names = model.named_steps['preprocess'].get_feature_names_out()
 
-except Exception as e:
-    st.info("Feature importance not available for this model.")
+# Create dataframe
+importance_df = pd.DataFrame({
+    "Feature": feature_names,
+    "Importance": importances
+})
 
-st.write("Fill the details to predict customer churn")
+# Sort top 10 features
+importance_df = importance_df.sort_values(by="Importance", ascending=False).head(10)
 
+# Plot
+fig, ax = plt.subplots()
+ax.barh(importance_df["Feature"], importance_df["Importance"])
+ax.invert_yaxis()
+ax.set_title("Top Features Influencing Churn")
+
+st.pyplot(fig)
 # ---------------- INPUTS ----------------
 gender = st.selectbox("Gender", ["Male", "Female"])
 SeniorCitizen = st.selectbox("Senior Citizen", [0, 1])
@@ -175,4 +182,5 @@ if prob is not None:
 
     else:
         st.write("• Maintain engagement")
+
         st.write("• Offer upsell opportunities")
